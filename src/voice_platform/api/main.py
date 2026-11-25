@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from voice_platform import __version__
-from voice_platform.api import auth, health, members, organizations
+from voice_platform.api import agents, auth, health, members, organizations
 from voice_platform.api.dependencies import CSRF_HEADER, SESSION_COOKIE
 from voice_platform.api.errors import install_error_handlers
 from voice_platform.identity.email import LocalDevEmailSender
@@ -35,6 +35,7 @@ def build_routes(app: FastAPI) -> None:
     app.include_router(auth.router)
     app.include_router(organizations.router)
     app.include_router(members.router)
+    app.include_router(agents.router)
 
 
 def install_middleware(app: FastAPI, settings: Settings) -> None:
