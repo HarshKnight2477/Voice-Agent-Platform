@@ -2,103 +2,18 @@
 
 from __future__ import annotations
 
-import re
 import uuid
-from collections.abc import AsyncIterator
-from dataclasses import dataclass, field
 
 import pytest
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient, Response
-from pydantic import SecretStr
+from api_harness import PASSWORD, Harness, csrf, signup, unique_email
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
-from voice_platform.api.main import build_routes
-from voice_platform.identity.email import AccountEmail
 from voice_platform.infrastructure.database import tenant_transaction
-from voice_platform.shared.config import Environment, Settings, get_settings
-from voice_platform.shared.request_context import RequestContextMiddleware
 from voice_platform.tenancy.models import Membership
 from voice_platform.tenancy.permissions import Role
 
 pytestmark = pytest.mark.integration
-
-PASSWORD = "a-long-test-password-1"
-
-
-@dataclass
-class FakeMailer:
-    sent: list[AccountEmail] = field(default_factory=list)
-
-    async def send(self, email: AccountEmail) -> None:
-        self.sent.append(email)
-
-    def last_token(self, kind: str) -> str:
-        email = next(e for e in reversed(self.sent) if e.kind == kind)
-        match = re.search(r"token=([^&]+)", email.link)
-        assert match
-        return match.group(1)
-
-
-class FakeLimiter:
-    def __init__(self) -> None:
-        self.counts: dict[str, int] = {}
-
-    async def hit(self, key: str, *, limit: int, window_seconds: int) -> bool:
-        self.counts[key] = self.counts.get(key, 0) + 1
-        return self.counts[key] <= limit
-
-
-@dataclass
-class Harness:
-    client: AsyncClient
-    mailer: FakeMailer
-    limiter: FakeLimiter
-    sessions: async_sessionmaker[AsyncSession]
-
-
-@pytest.fixture
-async def harness(app_sessions: async_sessionmaker[AsyncSession]) -> AsyncIterator[Harness]:
-    settings = Settings(
-        _env_file=None,  # type: ignore[call-arg]
-        app_env=Environment.TEST,
-        database_url="postgresql://unused:unused@127.0.0.1/unused",  # type: ignore[arg-type]
-        redis_url="redis://127.0.0.1:6379/0",  # type: ignore[arg-type]
-        app_secret_key=SecretStr("test-secret-key"),
-        cookie_secure=False,
-    )
-    app = FastAPI()
-    app.add_middleware(RequestContextMiddleware)
-    build_routes(app)
-    mailer, limiter = FakeMailer(), FakeLimiter()
-    app.state.sessionmaker = app_sessions
-    app.state.email_sender = mailer
-    app.state.rate_limiter = limiter
-    app.dependency_overrides[get_settings] = lambda: settings
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        yield Harness(client, mailer, limiter, app_sessions)
-
-
-def unique_email() -> str:
-    return f"user-{uuid.uuid4().hex[:10]}@example.com"
-
-
-async def signup(h: Harness, email: str | None = None, org: str = "Pizza Place") -> Response:
-    return await h.client.post(
-        "/api/v1/auth/signup",
-        json={
-            "email": email or unique_email(),
-            "password": PASSWORD,
-            "full_name": "Test Owner",
-            "organization_name": org,
-        },
-    )
-
-
-def csrf(resp: Response) -> dict[str, str]:
-    return {"x-csrf-token": resp.json()["csrf_token"]}
-
 
 # ---------------------------------------------------------------- sign-up and login
 
@@ -124,9 +39,13 @@ async def test_signup_rejects_weak_password_and_duplicate_email(harness: Harness
     h = harness
     weak = await h.client.post(
         "/api/v1/auth/signup",
-        json={"email": unique_email(), "password": "short", "full_name": "x",
-              "organization_name": "Org"},
-    )  # fmt: skip
+        json={
+            "email": unique_email(),
+            "password": "short",
+            "full_name": "x",
+            "organization_name": "Org",
+        },
+    )
     assert weak.status_code == 422 and weak.json()["code"] == "weak_password"
     assert "short" not in weak.text  # submitted values are never echoed
 
@@ -174,9 +93,10 @@ async def test_login_is_rate_limited(harness: Harness) -> None:
 
 async def test_auth_endpoints_require_json(harness: Harness) -> None:
     resp = await harness.client.post(
-        "/api/v1/auth/login", content="email=a&password=b",
+        "/api/v1/auth/login",
+        content="email=a&password=b",
         headers={"content-type": "application/x-www-form-urlencoded"},
-    )  # fmt: skip
+    )
     assert resp.status_code == 415
 
 
@@ -271,8 +191,11 @@ async def _add_member(
     async with tenant_transaction(
         sessions, org_id=uuid.UUID(org_id), user_id=uuid.UUID(owner_id)
     ) as s:
-        s.add(Membership(organization_id=uuid.UUID(org_id), user_id=uuid.UUID(user_id),
-                         role_key=role.value))  # fmt: skip
+        s.add(
+            Membership(
+                organization_id=uuid.UUID(org_id), user_id=uuid.UUID(user_id), role_key=role.value
+            )
+        )
 
 
 @pytest.mark.parametrize(
@@ -332,7 +255,7 @@ async def test_cannot_switch_into_an_organization_you_do_not_belong_to(harness: 
     current = (await h.client.get("/api/v1/organizations/current")).json()
     assert current["id"] == attacker["organization_id"]
     members = (await h.client.get("/api/v1/organizations/current/members")).json()
-    assert [m["user_id"] for m in members] == [attacker["user_id"]]
+    assert [m["user_id"] for m in members["data"]] == [attacker["user_id"]]
 
 
 async def test_removed_member_loses_access_immediately(
@@ -366,13 +289,20 @@ async def test_signup_writes_audit_and_outbox(harness: Harness, owner_engine: As
     org_id = (await signup(h)).json()["organization_id"]
     async with owner_engine.connect() as conn:
         actions = set(
-            (await conn.scalars(
-                select(text("action")).select_from(text("audit_logs")).where(
-                    text("organization_id = :o")), {"o": org_id}
-            )).all()
-        )  # fmt: skip
-        events = (await conn.scalars(
-            text("SELECT event_type FROM outbox_events WHERE organization_id = :o"), {"o": org_id}
-        )).all()  # fmt: skip
+            (
+                await conn.scalars(
+                    select(text("action"))
+                    .select_from(text("audit_logs"))
+                    .where(text("organization_id = :o")),
+                    {"o": org_id},
+                )
+            ).all()
+        )
+        events = (
+            await conn.scalars(
+                text("SELECT event_type FROM outbox_events WHERE organization_id = :o"),
+                {"o": org_id},
+            )
+        ).all()
     assert {"user.signed_up", "organization.created"} <= actions
     assert list(events) == ["organization.created"]

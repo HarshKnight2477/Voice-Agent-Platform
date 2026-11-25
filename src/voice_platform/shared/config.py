@@ -47,6 +47,10 @@ class Settings(BaseSettings):
 
     # Where the dashboard lives; used to build links in account emails.
     public_app_url: str = "http://127.0.0.1:3000"
+    # Browser origins allowed to call the API with cookies. Defaults to public_app_url.
+    cors_allowed_origins: list[str] = Field(default_factory=list)
+    # Requests per minute per signed-in session (or per IP when signed out).
+    api_rate_limit_per_minute: int = Field(default=600, ge=10)
     session_ttl_hours: int = Field(default=24 * 14, ge=1, le=24 * 90)
     # Secure cookies need HTTPS. Defaults on; .env sets it false only for local http.
     cookie_secure: bool = True
@@ -59,6 +63,10 @@ class Settings(BaseSettings):
             if not self.cookie_secure:
                 raise ValueError("COOKIE_SECURE must be true outside local/test")
         return self
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        return self.cors_allowed_origins or [self.public_app_url.rstrip("/")]
 
     @property
     def is_production(self) -> bool:

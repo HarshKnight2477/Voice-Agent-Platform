@@ -190,10 +190,24 @@ async def signup(
         )
         await s.flush()
         s.add(Membership(organization_id=org_id, user_id=user_id, role_key=Role.OWNER.value))
-        _audit(s, "user.signed_up", meta, org_id=org_id, actor=user_id, target_type="user",
-               target_id=user_id)  # fmt: skip
-        _audit(s, "organization.created", meta, org_id=org_id, actor=user_id,
-               target_type="organization", target_id=org_id)  # fmt: skip
+        _audit(
+            s,
+            "user.signed_up",
+            meta,
+            org_id=org_id,
+            actor=user_id,
+            target_type="user",
+            target_id=user_id,
+        )
+        _audit(
+            s,
+            "organization.created",
+            meta,
+            org_id=org_id,
+            actor=user_id,
+            target_type="organization",
+            target_id=org_id,
+        )
         s.add(
             OutboxEvent(
                 organization_id=org_id,
@@ -308,8 +322,9 @@ async def switch_organization(
             .values(revoked_at=_now())
         )
         new = _new_session_row(s, session.user_id, organization_id, meta, session_ttl)
-        _audit(s, "session.organization_switched", meta, org_id=organization_id,
-               actor=session.user_id)  # fmt: skip
+        _audit(
+            s, "session.organization_switched", meta, org_id=organization_id, actor=session.user_id
+        )
     return new
 
 
@@ -346,8 +361,14 @@ async def revoke_session(
             .values(revoked_at=_now())
         )
         if result.rowcount:  # type: ignore[attr-defined]
-            _audit(s, "session.revoked", meta, actor=user_id, target_type="session",
-                   target_id=session_id)  # fmt: skip
+            _audit(
+                s,
+                "session.revoked",
+                meta,
+                actor=user_id,
+                target_type="session",
+                target_id=session_id,
+            )
         return bool(result.rowcount)  # type: ignore[attr-defined]
 
 

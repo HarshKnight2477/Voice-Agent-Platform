@@ -19,7 +19,7 @@ log = get_logger(__name__)
 @dataclass(frozen=True)
 class AccountEmail:
     to: str
-    kind: str  # "verify_email" | "reset_password"
+    kind: str  # "verify_email" | "reset_password" | "invitation"
     link: str
 
 

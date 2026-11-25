@@ -60,29 +60,58 @@ ROLE_PERMISSIONS = {
     "OWNER": _ALL,
     "ADMIN": _ALL - {"org.delete", "billing.manage"},
     "MANAGER": {
-        "org.read", "members.read", "members.invite", "members.update_role", "members.remove",
-        "agents.read", "agents.write", "agents.publish", "knowledge.read", "knowledge.write",
-        "phone_numbers.read", "phone_numbers.manage", "calls.read", "calls.transcript.read",
-        "recordings.read", "analytics.read", "integrations.manage",
+        "org.read",
+        "members.read",
+        "members.invite",
+        "members.update_role",
+        "members.remove",
+        "agents.read",
+        "agents.write",
+        "agents.publish",
+        "knowledge.read",
+        "knowledge.write",
+        "phone_numbers.read",
+        "phone_numbers.manage",
+        "calls.read",
+        "calls.transcript.read",
+        "recordings.read",
+        "analytics.read",
+        "integrations.manage",
     },
     "AGENT_MANAGER": {
-        "org.read", "members.read", "agents.read", "agents.write", "agents.publish",
-        "knowledge.read", "knowledge.write", "phone_numbers.read", "calls.read",
-        "calls.transcript.read", "analytics.read",
+        "org.read",
+        "members.read",
+        "agents.read",
+        "agents.write",
+        "agents.publish",
+        "knowledge.read",
+        "knowledge.write",
+        "phone_numbers.read",
+        "calls.read",
+        "calls.transcript.read",
+        "analytics.read",
     },
     "ANALYST": {
-        "org.read", "agents.read", "knowledge.read", "calls.read", "calls.transcript.read",
+        "org.read",
+        "agents.read",
+        "knowledge.read",
+        "calls.read",
+        "calls.transcript.read",
         "analytics.read",
     },
     "VIEWER": {"org.read", "agents.read", "calls.read", "analytics.read"},
-}  # fmt: skip
+}
 
 
 def _timestamps() -> list[sa.Column[object]]:
     return [
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-    ]  # fmt: skip
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
+    ]
 
 
 def _uuid_pk() -> sa.Column[object]:
@@ -170,14 +199,19 @@ def upgrade() -> None:
         sa.Column("role_key", sa.String(32), nullable=False),
         sa.Column("permission_key", sa.String(64), nullable=False),
         sa.ForeignKeyConstraint(
-            ["role_key"], ["roles.key"], name="fk_role_permissions_role_key_roles", ondelete="CASCADE"
+            ["role_key"],
+            ["roles.key"],
+            name="fk_role_permissions_role_key_roles",
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["permission_key"], ["permissions.key"],
-            name="fk_role_permissions_permission_key_permissions", ondelete="CASCADE",
+            ["permission_key"],
+            ["permissions.key"],
+            name="fk_role_permissions_permission_key_permissions",
+            ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("role_key", "permission_key", name="pk_role_permissions"),
-    )  # fmt: skip
+    )
 
     op.create_table(
         "memberships",
@@ -188,15 +222,19 @@ def upgrade() -> None:
         *_timestamps(),
         sa.PrimaryKeyConstraint("id", name="pk_memberships"),
         sa.ForeignKeyConstraint(
-            ["organization_id"], ["organizations.id"],
-            name="fk_memberships_organization_id_organizations", ondelete="CASCADE",
+            ["organization_id"],
+            ["organizations.id"],
+            name="fk_memberships_organization_id_organizations",
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["user_id"], ["users.id"], name="fk_memberships_user_id_users", ondelete="CASCADE"
         ),
         sa.ForeignKeyConstraint(["role_key"], ["roles.key"], name="fk_memberships_role_key_roles"),
-        sa.UniqueConstraint("organization_id", "user_id", name="uq_memberships_organization_id_user_id"),
-    )  # fmt: skip
+        sa.UniqueConstraint(
+            "organization_id", "user_id", name="uq_memberships_organization_id_user_id"
+        ),
+    )
     op.create_index("ix_memberships_user_id", "memberships", ["user_id"])
 
     op.create_table(
@@ -210,17 +248,23 @@ def upgrade() -> None:
         sa.Column("ip_address", pg.INET(), nullable=True),
         sa.Column("request_id", sa.String(64), nullable=True),
         sa.Column("details", pg.JSONB(), server_default="{}", nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_audit_logs"),
         sa.ForeignKeyConstraint(
-            ["organization_id"], ["organizations.id"],
-            name="fk_audit_logs_organization_id_organizations", ondelete="CASCADE",
+            ["organization_id"],
+            ["organizations.id"],
+            name="fk_audit_logs_organization_id_organizations",
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["actor_user_id"], ["users.id"],
-            name="fk_audit_logs_actor_user_id_users", ondelete="SET NULL",
+            ["actor_user_id"],
+            ["users.id"],
+            name="fk_audit_logs_actor_user_id_users",
+            ondelete="SET NULL",
         ),
-    )  # fmt: skip
+    )
     op.create_index("ix_audit_logs_org_created", "audit_logs", ["organization_id", "created_at"])
 
     op.create_table(
@@ -234,17 +278,21 @@ def upgrade() -> None:
         sa.Column("status", sa.String(16), server_default="pending", nullable=False),
         sa.Column("attempts", sa.Integer(), server_default="0", nullable=False),
         sa.Column("last_error", sa.Text(), nullable=True),
-        sa.Column("occurred_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "occurred_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("dispatched_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id", name="pk_outbox_events"),
         sa.ForeignKeyConstraint(
-            ["organization_id"], ["organizations.id"],
-            name="fk_outbox_events_organization_id_organizations", ondelete="CASCADE",
+            ["organization_id"],
+            ["organizations.id"],
+            name="fk_outbox_events_organization_id_organizations",
+            ondelete="CASCADE",
         ),
         sa.CheckConstraint(
             "status IN ('pending', 'dispatched', 'failed')", name="ck_outbox_events_status_values"
         ),
-    )  # fmt: skip
+    )
     op.create_index(
         "ix_outbox_events_pending",
         "outbox_events",
@@ -295,23 +343,23 @@ def upgrade() -> None:
 
     policies = [  # one statement each: asyncpg runs a single command per call
         # organizations: visible if it is the active org, or the user is a member of it.
-        'CREATE POLICY org_select ON organizations FOR SELECT USING (id = app_current_org() OR id IN (SELECT organization_id FROM memberships WHERE user_id = app_current_user()))',
-        'CREATE POLICY org_insert ON organizations FOR INSERT WITH CHECK (id = app_current_org())',
-        'CREATE POLICY org_update ON organizations FOR UPDATE USING (id = app_current_org()) WITH CHECK (id = app_current_org())',
-        'CREATE POLICY org_delete ON organizations FOR DELETE USING (id = app_current_org())',
+        "CREATE POLICY org_select ON organizations FOR SELECT USING (id = app_current_org() OR id IN (SELECT organization_id FROM memberships WHERE user_id = app_current_user()))",
+        "CREATE POLICY org_insert ON organizations FOR INSERT WITH CHECK (id = app_current_org())",
+        "CREATE POLICY org_update ON organizations FOR UPDATE USING (id = app_current_org()) WITH CHECK (id = app_current_org())",
+        "CREATE POLICY org_delete ON organizations FOR DELETE USING (id = app_current_org())",
         # memberships: the active org's members, plus the user's own memberships elsewhere.
-        'CREATE POLICY mem_select ON memberships FOR SELECT USING (organization_id = app_current_org() OR user_id = app_current_user())',
-        'CREATE POLICY mem_insert ON memberships FOR INSERT WITH CHECK (organization_id = app_current_org())',
-        'CREATE POLICY mem_update ON memberships FOR UPDATE USING (organization_id = app_current_org()) WITH CHECK (organization_id = app_current_org())',
-        'CREATE POLICY mem_delete ON memberships FOR DELETE USING (organization_id = app_current_org())',
+        "CREATE POLICY mem_select ON memberships FOR SELECT USING (organization_id = app_current_org() OR user_id = app_current_user())",
+        "CREATE POLICY mem_insert ON memberships FOR INSERT WITH CHECK (organization_id = app_current_org())",
+        "CREATE POLICY mem_update ON memberships FOR UPDATE USING (organization_id = app_current_org()) WITH CHECK (organization_id = app_current_org())",
+        "CREATE POLICY mem_delete ON memberships FOR DELETE USING (organization_id = app_current_org())",
         # audit_logs: read own org only; write own org or platform-level (null org).
-        'CREATE POLICY audit_select ON audit_logs FOR SELECT USING (organization_id = app_current_org())',
-        'CREATE POLICY audit_insert ON audit_logs FOR INSERT WITH CHECK (organization_id = app_current_org() OR organization_id IS NULL)',
+        "CREATE POLICY audit_select ON audit_logs FOR SELECT USING (organization_id = app_current_org())",
+        "CREATE POLICY audit_insert ON audit_logs FOR INSERT WITH CHECK (organization_id = app_current_org() OR organization_id IS NULL)",
         # outbox_events: same shape as audit, plus status updates within the org.
-        'CREATE POLICY outbox_select ON outbox_events FOR SELECT USING (organization_id = app_current_org())',
-        'CREATE POLICY outbox_insert ON outbox_events FOR INSERT WITH CHECK (organization_id = app_current_org() OR organization_id IS NULL)',
-        'CREATE POLICY outbox_update ON outbox_events FOR UPDATE USING (organization_id = app_current_org()) WITH CHECK (organization_id = app_current_org())',
-    ]  # fmt: skip
+        "CREATE POLICY outbox_select ON outbox_events FOR SELECT USING (organization_id = app_current_org())",
+        "CREATE POLICY outbox_insert ON outbox_events FOR INSERT WITH CHECK (organization_id = app_current_org() OR organization_id IS NULL)",
+        "CREATE POLICY outbox_update ON outbox_events FOR UPDATE USING (organization_id = app_current_org()) WITH CHECK (organization_id = app_current_org())",
+    ]
     for statement in policies:
         op.execute(statement)
 

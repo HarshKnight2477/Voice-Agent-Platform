@@ -34,3 +34,18 @@ One entry per build step: what was built, why, and how it was verified.
 - Fix found by tests: audit/outbox rows without an organization could not be inserted with `RETURNING` under row-level security; those models now set all defaults client-side.
 - Verified: 49 tests (role matrix for all six roles, cross-organization switch blocked, CSRF required, session revocation, single-use tokens, reset signs out everywhere, rate limiting, audit + outbox written), ruff, mypy --strict, and a live sign-up → `/me` → PATCH-without-CSRF smoke test.
 - Not yet: MFA (required for owners/admins later), invitations and role changes (next piece), a real email provider.
+
+## Phase 1.4 — Team management and API conventions
+- **Invitations** (migration `0003_invitations`, `api/members.py`): `POST /organizations/current/invitations` emails a 7-day single-use link; `GET` lists open ones; `DELETE …/{id}` revokes; `POST /api/v1/invitations/accept` joins. The token is `<org id>.<secret>` (only its hash is stored) and only the account whose email matches can accept; accepting also verifies that email. One open invitation per email per organization (partial unique index); row-level security on the table.
+- **Role rules** (`tenancy/rules.py`, pure functions, tested over every role pair): only an OWNER grants OWNER or manages another OWNER; everyone else manages only lower-ranked members and grants at most their own rank; nobody changes their own role; an organization always keeps one OWNER (owner rows are locked while checking, so concurrent demotions can't both pass).
+- **Members:** `GET /organizations/current/members` (paginated), `PATCH …/members/{user_id}` change role, `DELETE …/members/{user_id}` remove (or leave, for yourself). Removal clears the person's sessions from that organization at once.
+- **Pagination** (`api/pagination.py`): keyset cursor on `(created_at, id)`, `limit` 1–100 (default 25), response `{data, next_cursor}`; invalid cursors give `400 invalid_cursor`.
+- **Audit log API:** `GET /organizations/current/audit-logs` (needs `audit.read`), filterable by `action`. Role changes, removals and invitations are all audited.
+- **HTTP hardening** (`shared/http_security.py`, `api/main.py`):
+  - API-wide rate limit per signed-in session (or per IP when signed out), default 600 requests/minute, `429` + `Retry-After`; health checks are exempt.
+  - Security headers on every response: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `CSP default-src 'none'` on the API, `Cache-Control: no-store` on `/api/*`, HSTS in staging/production.
+  - CORS allows only the dashboard origin(s) (`CORS_ALLOWED_ORIGINS`, default `PUBLIC_APP_URL`) with credentials and the `X-CSRF-Token` header.
+- **OpenAPI:** 19 documented paths at `/docs` (disabled in production).
+- Verified: 104 tests (unit rule matrix; invitation accept/wrong account/forged token/duplicate/revoke; rank-limited promotion; self-change blocked; last-owner protection; removed member loses access; paginated audit log; viewer denied audit; security headers; CORS allow/deny; API rate limit), ruff, mypy --strict, live header check.
+
+**Phase 1 (foundation) is complete.** Not included yet, by design: MFA, SSO, API keys, a real email provider (all scheduled for later phases).

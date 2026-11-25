@@ -11,6 +11,7 @@ import asyncio
 from collections.abc import AsyncIterator, Iterator
 
 import pytest
+from api_harness import Harness, make_harness
 from sqlalchemy import text
 from sqlalchemy.engine.url import URL, make_url
 from sqlalchemy.ext.asyncio import (
@@ -76,3 +77,9 @@ async def app_engine(test_database: tuple[URL, URL]) -> AsyncIterator[AsyncEngin
 @pytest.fixture
 def app_sessions(app_engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
     return create_sessionmaker(app_engine)
+
+
+@pytest.fixture
+async def harness(app_sessions: async_sessionmaker[AsyncSession]) -> AsyncIterator[Harness]:
+    async for h in make_harness(app_sessions):
+        yield h

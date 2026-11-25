@@ -71,14 +71,6 @@ class OrganizationUpdate(BaseModel):
         return v
 
 
-class MemberOut(BaseModel):
-    user_id: uuid.UUID
-    email: str
-    full_name: str
-    role: Role
-    joined_at: datetime
-
-
 @router.get("/me")
 async def me(
     request: Request, session: CurrentSession, sm: SessionMaker, settings: AppSettings
@@ -163,24 +155,3 @@ async def update_current_organization(
         await s.flush()
         await s.refresh(org)
     return _org_out(org)
-
-
-@router.get("/organizations/current/members")
-async def list_members(
-    sm: SessionMaker, ctx: AuthContext = require(Permission.MEMBERS_READ)
-) -> list[MemberOut]:
-    async with tenant_transaction(sm, org_id=ctx.organization_id, user_id=ctx.user_id) as s:
-        rows = (
-            await s.execute(
-                select(
-                    User.id, User.email, User.full_name, Membership.role_key, Membership.created_at
-                )
-                .join(Membership, Membership.user_id == User.id)
-                .where(Membership.organization_id == ctx.organization_id)
-                .order_by(Membership.created_at)
-            )
-        ).all()
-    return [
-        MemberOut(user_id=u, email=e, full_name=n, role=Role(r), joined_at=j)
-        for u, e, n, r, j in rows
-    ]

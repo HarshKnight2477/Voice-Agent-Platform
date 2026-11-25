@@ -93,14 +93,24 @@ def _set_session_cookies(response: Response, token: str, settings: Settings) -> 
     max_age = settings.session_ttl_hours * 3600
     csrf = csrf_token_for(token, settings.app_secret_key.get_secret_value())
     response.set_cookie(
-        SESSION_COOKIE, token, max_age=max_age, httponly=True,
-        secure=settings.cookie_secure, samesite="lax", path="/",
-    )  # fmt: skip
+        SESSION_COOKIE,
+        token,
+        max_age=max_age,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        path="/",
+    )
     # Readable by the dashboard's JavaScript so it can send X-CSRF-Token.
     response.set_cookie(
-        CSRF_COOKIE, csrf, max_age=max_age, httponly=False,
-        secure=settings.cookie_secure, samesite="lax", path="/",
-    )  # fmt: skip
+        CSRF_COOKIE,
+        csrf,
+        max_age=max_age,
+        httponly=False,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        path="/",
+    )
     return csrf
 
 
@@ -118,9 +128,14 @@ def _client_key(meta: service.RequestMeta) -> str:
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED, dependencies=[JsonOnly])
 async def signup(
-    body: SignupRequest, response: Response, sm: SessionMaker, settings: AppSettings,
-    meta: Meta, limiter: Limiter, mailer: Mailer,
-) -> SessionResponse:  # fmt: skip
+    body: SignupRequest,
+    response: Response,
+    sm: SessionMaker,
+    settings: AppSettings,
+    meta: Meta,
+    limiter: Limiter,
+    mailer: Mailer,
+) -> SessionResponse:
     await rate_limit(limiter, f"signup:ip:{_client_key(meta)}", limit=5, window_seconds=3600)
     try:
         result = await service.signup(
@@ -156,9 +171,13 @@ async def signup(
 
 @router.post("/login", dependencies=[JsonOnly])
 async def login(
-    body: LoginRequest, response: Response, sm: SessionMaker, settings: AppSettings,
-    meta: Meta, limiter: Limiter,
-) -> SessionResponse:  # fmt: skip
+    body: LoginRequest,
+    response: Response,
+    sm: SessionMaker,
+    settings: AppSettings,
+    meta: Meta,
+    limiter: Limiter,
+) -> SessionResponse:
     email_key = body.email.strip().lower()
     await rate_limit(limiter, f"login:ip:{_client_key(meta)}", limit=50, window_seconds=900)
     await rate_limit(limiter, f"login:email:{hash_token(email_key)}", limit=10, window_seconds=900)
@@ -176,18 +195,25 @@ async def login(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
-    session: CurrentSession, response: Response, sm: SessionMaker, settings: AppSettings,
+    session: CurrentSession,
+    response: Response,
+    sm: SessionMaker,
+    settings: AppSettings,
     meta: Meta,
-) -> None:  # fmt: skip
+) -> None:
     await service.logout(sm, session, meta)
     _clear_session_cookies(response, settings)
 
 
 @router.post("/switch-organization")
 async def switch_organization(
-    body: SwitchOrganizationRequest, session: CurrentSession, response: Response,
-    sm: SessionMaker, settings: AppSettings, meta: Meta,
-) -> SessionResponse:  # fmt: skip
+    body: SwitchOrganizationRequest,
+    session: CurrentSession,
+    response: Response,
+    sm: SessionMaker,
+    settings: AppSettings,
+    meta: Meta,
+) -> SessionResponse:
     try:
         new = await service.switch_organization(
             sm, session, body.organization_id, meta, _ttl(settings)
@@ -233,12 +259,18 @@ async def verify_email(body: TokenRequest, sm: SessionMaker, meta: Meta, limiter
         raise AppError(400, "invalid_token", "This link is invalid or has expired.") from None
 
 
-@router.post("/password-reset/request", status_code=status.HTTP_202_ACCEPTED,
-             dependencies=[JsonOnly])  # fmt: skip
+@router.post(
+    "/password-reset/request", status_code=status.HTTP_202_ACCEPTED, dependencies=[JsonOnly]
+)
 async def request_password_reset(
-    body: PasswordResetRequest, request: Request, sm: SessionMaker, settings: AppSettings,
-    meta: Meta, limiter: Limiter, mailer: Mailer,
-) -> dict[str, str]:  # fmt: skip
+    body: PasswordResetRequest,
+    request: Request,
+    sm: SessionMaker,
+    settings: AppSettings,
+    meta: Meta,
+    limiter: Limiter,
+    mailer: Mailer,
+) -> dict[str, str]:
     await rate_limit(limiter, f"reset:ip:{_client_key(meta)}", limit=5, window_seconds=3600)
     await rate_limit(
         limiter,
@@ -260,12 +292,17 @@ async def request_password_reset(
     return {"status": "If that email has an account, a reset link is on its way."}
 
 
-@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT,
-             dependencies=[JsonOnly])  # fmt: skip
+@router.post(
+    "/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT, dependencies=[JsonOnly]
+)
 async def confirm_password_reset(
-    body: PasswordResetConfirm, response: Response, sm: SessionMaker, settings: AppSettings,
-    meta: Meta, limiter: Limiter,
-) -> None:  # fmt: skip
+    body: PasswordResetConfirm,
+    response: Response,
+    sm: SessionMaker,
+    settings: AppSettings,
+    meta: Meta,
+    limiter: Limiter,
+) -> None:
     await rate_limit(
         limiter, f"reset-confirm:ip:{_client_key(meta)}", limit=10, window_seconds=3600
     )
