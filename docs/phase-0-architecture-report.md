@@ -101,7 +101,7 @@ Tenant isolation · security · authorization · business policies · tool permi
  └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Bounded modules (Python packages under `platform/`): `identity`, `tenancy`, `agents`, `runtime`, `tools`, `workflows`, `knowledge`, `telephony`, `voice`, `integrations`, `calls`, `analytics`, `metering`, `audit`, `shared`. Provider adapters live in `platform/providers/<kind>/<vendor>.py`. LiveKit code lives only in `platform/providers/telephony/livekit/` and `platform/voice/livekit_worker/`.
+Bounded modules (Python packages under `src/voice_platform/`): `identity`, `tenancy`, `agents`, `runtime`, `tools`, `workflows`, `knowledge`, `telephony`, `voice`, `integrations`, `calls`, `analytics`, `metering`, `audit`, `shared`. Provider adapters live in `src/voice_platform/providers/<kind>/<vendor>.py`. LiveKit code lives only in `src/voice_platform/providers/telephony/livekit/` and `src/voice_platform/voice/livekit_worker/`.
 
 ---
 

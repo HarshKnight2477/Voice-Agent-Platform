@@ -9,14 +9,17 @@ from livekit.agents import AgentServer, AgentSession, Agent, TurnHandlingOptions
 
 server = AgentServer()
 
+
 @server.rtc_session(agent_name="voice-agent", on_session_end=on_session_end)
-async def entrypoint(ctx: agents.JobContext):
-    ...  # our adapter: resolve call → load version snapshot → build session → start
+async def entrypoint(
+    ctx: agents.JobContext,
+): ...  # our adapter: resolve call → load version snapshot → build session → start
+
 
 if __name__ == "__main__":
     agents.cli.run_app(server)
 ```
-This is reference only; it lives in `platform/voice/livekit_worker/` and nowhere else.
+This is reference only; it lives in `src/voice_platform/voice/livekit_worker/` and nowhere else.
 
 ## What we use natively (do not rebuild)
 | Need | LiveKit feature |
@@ -41,7 +44,7 @@ LiveKit JobContext ──▶ LiveKitCallAdapter ──▶ CallContext (ours: cal
 AgentSession events ──▶ adapter ──▶ RuntimeEvents (TurnStarted, UserTranscript, AgentReply, ToolRequested, Metrics)
 Runtime decisions  ──▶ adapter ──▶ session.say / generate_reply / update tools / transfer via TelephonyProvider
 ```
-The runtime (`platform/runtime`) is testable without LiveKit.
+The runtime (`src/voice_platform/runtime`) is testable without LiveKit.
 
 ## Dispatch
 - `agent_name="voice-agent"` on the worker → explicit dispatch only.

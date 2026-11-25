@@ -24,7 +24,7 @@ Deterministic, versioned workflows drive multi-step tasks; the LLM handles langu
 Step types: `collect`, `validate`, `condition`/`branch`, `tool`, `confirm`, `say`, `escalate`, `business_hours`, `wait`/timeout, `end`. Each step has retries, timeouts and a fallback edge.
 
 ## Execution
-- The engine (pure Python, in `platform/workflows`) advances on state changes and tool results; persisted in `workflow_executions`.
+- The engine (pure Python, in `src/voice_platform/workflows`) advances on state changes and tool results; persisted in `workflow_executions`.
 - Mapped onto LiveKit `AgentTask` where a step needs its own focused instructions/tools; the engine remains the source of truth.
 - The LLM can pick *which* workflow to start (intent) and fill slots; it cannot skip confirm or tool steps.
 - Business hours and validation are deterministic code.

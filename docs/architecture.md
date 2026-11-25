@@ -20,7 +20,7 @@ Business → Agent Template → Agent Configuration → Agent Version (immutable
 
 ```
 /
-├── platform/                 # Python package (uv workspace member)
+├── src/voice_platform/       # Python package (named voice_platform: "platform" clashes with the Python stdlib)
 │   ├── shared/               # config, errors, ids, clock, tenant context, logging
 │   ├── identity/             # users, sessions, MFA, API keys
 │   ├── tenancy/              # organizations, memberships, roles, permissions
