@@ -14,6 +14,8 @@ dependencies = [
     "asyncpg>=0.30",
     "redis>=5.2",
     "alembic>=1.14",
+    "argon2-cffi>=23.1",
+    "email-validator>=2.2",
 ]
 
 [dependency-groups]
@@ -47,9 +49,15 @@ src = ["src", "tests"]
 select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF"]
 ignore = ["S101"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI dependency markers are meant to be used as argument defaults.
+extend-immutable-calls = ["fastapi.Depends", "voice_platform.api.dependencies.require"]
+
 [tool.ruff.lint.per-file-ignores]
 # Migrations hold literal DDL/policy SQL built only from constants.
 "migrations/**" = ["E501", "S608"]
+# Tests use fixed, fake passwords.
+"tests/**" = ["S105", "S106"]
 
 [tool.mypy]
 python_version = "3.12"

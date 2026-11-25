@@ -11,15 +11,26 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from voice_platform import __version__
-from voice_platform.api import health
-from voice_platform.infrastructure.database import create_engine
+from voice_platform.api import auth, health, organizations
+from voice_platform.api.errors import install_error_handlers
+from voice_platform.identity.email import LocalDevEmailSender
+from voice_platform.infrastructure.database import create_engine, create_sessionmaker
 from voice_platform.infrastructure.health import LiveDependencyChecker
 from voice_platform.infrastructure.redis import create_redis
 from voice_platform.shared.config import Settings, get_settings
 from voice_platform.shared.logging import configure_logging, get_logger
+from voice_platform.shared.rate_limit import RedisRateLimiter
 from voice_platform.shared.request_context import RequestContextMiddleware
 
 log = get_logger(__name__)
+
+
+def build_routes(app: FastAPI) -> None:
+    """Routers and error handlers, shared by the real app and the test app."""
+    install_error_handlers(app)
+    app.include_router(health.router)
+    app.include_router(auth.router)
+    app.include_router(organizations.router)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -30,7 +41,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine = create_engine(settings)
         redis = create_redis(settings)
+        app.state.sessionmaker = create_sessionmaker(engine)
         app.state.dependency_checker = LiveDependencyChecker(engine, redis)
+        app.state.rate_limiter = RedisRateLimiter(redis)
+        # A real email provider replaces this before staging (it refuses to run there).
+        app.state.email_sender = LocalDevEmailSender(settings)
         log.info("app.started", env=settings.app_env.value, version=__version__)
         try:
             yield
@@ -49,5 +64,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None if settings.is_production else "/openapi.json",
     )
     app.add_middleware(RequestContextMiddleware)
-    app.include_router(health.router)
+    build_routes(app)
     return app

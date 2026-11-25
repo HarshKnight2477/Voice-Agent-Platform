@@ -5,7 +5,7 @@ This project is a SaaS platform for creating AI phone employees for businesses. 
 
 Multi-tenant SaaS for creating, testing, deploying and monitoring AI phone agents for small and medium businesses. Built on LiveKit Agents + LiveKit SIP, with an LLM provider (Anthropic) as the reasoning model and PostgreSQL as the database.
 
-**Status:** Phase 1 (foundation) in progress: project setup, local services, health checks and the core database with tenant isolation are done. See [docs/build-log.md](docs/build-log.md).
+**Status:** Phase 1 (foundation) in progress: project setup, local services, health checks and the core database with tenant isolation, and sign-up/login with role checks are done. See [docs/build-log.md](docs/build-log.md).
 
 - Architecture and design: [docs/](docs/README.md), starting with [docs/phase-0-architecture-report.md](docs/phase-0-architecture-report.md)
 

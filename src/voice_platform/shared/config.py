@@ -45,11 +45,19 @@ class Settings(BaseSettings):
 
     app_secret_key: SecretStr
 
+    # Where the dashboard lives; used to build links in account emails.
+    public_app_url: str = "http://127.0.0.1:3000"
+    session_ttl_hours: int = Field(default=24 * 14, ge=1, le=24 * 90)
+    # Secure cookies need HTTPS. Defaults on; .env sets it false only for local http.
+    cookie_secure: bool = True
+
     @model_validator(mode="after")
     def _check_production_safety(self) -> Settings:
         if self.app_env in (Environment.STAGING, Environment.PRODUCTION):
             if len(self.app_secret_key.get_secret_value()) < 32:
                 raise ValueError("APP_SECRET_KEY must be at least 32 characters outside local/test")
+            if not self.cookie_secure:
+                raise ValueError("COOKIE_SECURE must be true outside local/test")
         return self
 
     @property
