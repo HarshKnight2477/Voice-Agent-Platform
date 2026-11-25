@@ -35,7 +35,12 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = Field(default=8000, ge=1, le=65535)
 
+    # Runtime connection: the restricted app role, subject to row-level security.
     database_url: PostgresDsn
+    # Owner connection used only by migrations and `db-setup`. Never used by the API.
+    migration_database_url: PostgresDsn | None = None
+    # Password assigned to the app role by `db-setup` (must match DATABASE_URL).
+    app_db_password: SecretStr | None = None
     redis_url: RedisDsn
 
     app_secret_key: SecretStr
