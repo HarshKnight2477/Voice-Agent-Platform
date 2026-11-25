@@ -49,6 +49,17 @@ class Settings(BaseSettings):
     public_app_url: str = "http://127.0.0.1:3000"
     # Browser origins allowed to call the API with cookies. Defaults to public_app_url.
     cors_allowed_origins: list[str] = Field(default_factory=list)
+    # LLM provider. Agents choose a tier; these map tiers to the provider's model ids.
+    anthropic_api_key: SecretStr | None = None
+    llm_model_fast: str | None = None
+    llm_model_balanced: str | None = None
+    llm_model_deep: str | None = None
+    # Live calls can't wait long: fail fast and let the runtime fall back or escalate.
+    llm_timeout_seconds: float = Field(default=8.0, gt=0, le=120)
+    llm_max_retries: int = Field(default=1, ge=0, le=5)
+    # Re-run a request the model declined for safety reasons on a fallback model (server-side).
+    llm_refusal_fallback: bool = True
+
     # Requests per minute per signed-in session (or per IP when signed out).
     api_rate_limit_per_minute: int = Field(default=600, ge=10)
     session_ttl_hours: int = Field(default=24 * 14, ge=1, le=24 * 90)

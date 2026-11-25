@@ -17,6 +17,7 @@ dependencies = [
     "argon2-cffi>=23.1",
     "email-validator>=2.2",
     "tzdata>=2026.6",
+    "anthropic>=1.0",
 ]
 
 [dependency-groups]
@@ -39,7 +40,11 @@ packages = ["src/voice_platform"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-markers = ["integration: needs the local Docker services (PostgreSQL, Redis)"]
+markers = [
+    "integration: needs the local Docker services (PostgreSQL, Redis)",
+    "live_llm: calls the real LLM API (needs an API key; costs money)",
+]
+addopts = "-m 'not live_llm'"
 
 [tool.ruff]
 line-length = 100

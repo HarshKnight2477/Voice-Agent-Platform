@@ -104,8 +104,18 @@ class VoiceSettings(_Strict):
 class LLMSettings(_Strict):
     provider: Literal["anthropic"] = "anthropic"
     model: str = DEFAULT_LLM_MODEL
-    temperature: float = Field(default=0.3, ge=0.0, le=1.0)
-    max_output_tokens: int = Field(default=300, ge=50, le=2000)
+    # How hard the model thinks before answering. Current models reject sampling settings
+    # such as temperature, so effort is the quality/latency control. "low" suits live calls.
+    effort: Literal["low", "medium", "high"] = "low"
+    max_output_tokens: int = Field(default=400, ge=50, le=4000)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_legacy(cls, data: object) -> object:
+        # Versions saved before effort replaced temperature still load.
+        if isinstance(data, dict) and "temperature" in data:
+            data = {k: v for k, v in data.items() if k != "temperature"}
+        return data
 
     @field_validator("model")
     @classmethod
