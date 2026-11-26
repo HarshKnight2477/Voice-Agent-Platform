@@ -3,7 +3,8 @@
   uv run python -m voice_platform.runtime.console --template restaurant_receptionist \
       --business "Joe's Diner" --timezone Asia/Kolkata
 
-Needs ANTHROPIC_API_KEY and LLM_MODEL_* in .env. Type your lines as the caller; an empty
+Uses LLM_PROVIDER from .env (ollama = free local model, or anthropic).
+Type your lines as the caller; an empty
 line simulates silence; Ctrl+C or "bye" ends. Messages the agent takes are printed, not saved.
 """
 
@@ -14,7 +15,7 @@ import asyncio
 import uuid
 
 from voice_platform.agents.templates import TEMPLATES
-from voice_platform.providers.llm.anthropic_provider import AnthropicLLMProvider
+from voice_platform.providers.llm.factory import LLMConfigurationError, build_llm_provider
 from voice_platform.runtime.session import CallSession, SessionIdentity, TurnAction, TurnResult
 from voice_platform.shared.config import get_settings
 from voice_platform.shared.logging import configure_logging
@@ -58,8 +59,10 @@ async def main() -> None:
 
     settings = get_settings()
     configure_logging("WARNING", json_output=False)
-    if not settings.anthropic_api_key:
-        raise SystemExit("Set ANTHROPIC_API_KEY (and LLM_MODEL_*) in .env first.")
+    try:
+        llm = build_llm_provider(settings)
+    except LLMConfigurationError as exc:
+        raise SystemExit(str(exc)) from None
 
     config = TEMPLATES[args.template].build_config(args.business, args.timezone)
     if args.transfer_number:
@@ -80,7 +83,7 @@ async def main() -> None:
             f"console-{uuid.uuid4().hex[:8]}",
         ),
         config,
-        AnthropicLLMProvider(settings),
+        llm,
         registry,
         ToolGateway(registry),
         services={"message_sink": PrintMessageSink()},

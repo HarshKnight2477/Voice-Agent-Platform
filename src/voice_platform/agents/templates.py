@@ -42,6 +42,7 @@ TEMPLATES: dict[str, Template] = {
                 "to the right person.",
                 "greeting": "Hi, thanks for calling. How can I help you today?",
                 "tools": [
+                    {"name": "get_hours"},
                     {"name": "transfer_to_human"},
                     {"name": "take_message", "scopes": ["messages:create"]},
                 ],

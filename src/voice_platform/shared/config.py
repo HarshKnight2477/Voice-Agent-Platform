@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field, PostgresDsn, RedisDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -50,7 +51,10 @@ class Settings(BaseSettings):
     # Browser origins allowed to call the API with cookies. Defaults to public_app_url.
     cors_allowed_origins: list[str] = Field(default_factory=list)
     # LLM provider. Agents choose a tier; these map tiers to the provider's model ids.
+    llm_provider: Literal["anthropic", "ollama"] = "anthropic"
     anthropic_api_key: SecretStr | None = None
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_keep_alive: str = "30m"  # keep the model loaded on the GPU between calls
     llm_model_fast: str | None = None
     llm_model_balanced: str | None = None
     llm_model_deep: str | None = None
