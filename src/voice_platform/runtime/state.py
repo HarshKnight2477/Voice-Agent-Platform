@@ -60,6 +60,7 @@ class ConversationState(BaseModel):
     # Set by the runtime each caller turn from a deterministic check of what they said
     # ("yes", "that's right", ...). The model's own judgement never confirms an action.
     last_user_affirmed: bool = False
+    opening: str = ""  # what the agent said when it answered
 
     @property
     def missing_slots(self) -> list[str]:
@@ -74,6 +75,8 @@ class ConversationState(BaseModel):
     def summary_for_prompt(self) -> str:
         """Short, stable rendering for the dynamic part of the system prompt."""
         lines: list[str] = []
+        if self.opening and self.turns <= 1:
+            lines.append(f'You answered the call by saying: "{self.opening}"')
         if self.intent:
             lines.append(f"Caller's current goal: {self.intent}")
         known = {**{f"customer.{k}": v for k, v in self.customer.items()}, **self.slots}
