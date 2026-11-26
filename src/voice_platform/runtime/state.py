@@ -39,6 +39,7 @@ class PendingConfirmation(BaseModel):
     tool: str
     arguments: dict[str, Any]
     readback: str
+    requested_turn: int = 0
 
 
 class ConversationState(BaseModel):
@@ -56,6 +57,9 @@ class ConversationState(BaseModel):
     actions: list[ActionRecord] = Field(default_factory=list)
     turns: int = 0
     consecutive_failures: int = 0
+    # Set by the runtime each caller turn from a deterministic check of what they said
+    # ("yes", "that's right", ...). The model's own judgement never confirms an action.
+    last_user_affirmed: bool = False
 
     @property
     def missing_slots(self) -> list[str]:
