@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from voice_platform.api.main import build_routes, install_middleware
 from voice_platform.identity.email import AccountEmail
+from voice_platform.providers.telephony.livekit_provider import LiveKitProvider
 from voice_platform.shared.config import Environment, Settings, get_settings
 
 PASSWORD = "a-long-test-password-1"
@@ -71,6 +72,7 @@ async def make_harness(
     app.state.sessionmaker = app_sessions
     app.state.email_sender = mailer
     app.state.rate_limiter = limiter
+    app.state.telephony = LiveKitProvider(settings)
     app.dependency_overrides[get_settings] = lambda: settings
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield Harness(client, mailer, limiter, app_sessions)

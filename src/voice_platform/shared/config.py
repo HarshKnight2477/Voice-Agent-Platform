@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     # Re-run a request the model declined for safety reasons on a fallback model (server-side).
     llm_refusal_fallback: bool = True
 
+    # Default LiveKit deployment. More deployments (staging, regions) are added as records later.
+    livekit_url: str = "ws://127.0.0.1:7880"
+    livekit_api_key: str = "devkey"
+    livekit_api_secret: SecretStr = SecretStr("secret")
+    # Dispatch name the agent worker registers under. Explicit dispatch only.
+    livekit_agent_name: str = "voice-agent"
+    test_call_token_ttl_minutes: int = Field(default=10, ge=1, le=60)
+
     # Requests per minute per signed-in session (or per IP when signed out).
     api_rate_limit_per_minute: int = Field(default=600, ge=10)
     session_ttl_hours: int = Field(default=24 * 14, ge=1, le=24 * 90)
@@ -71,6 +79,10 @@ class Settings(BaseSettings):
         if self.app_env in (Environment.STAGING, Environment.PRODUCTION):
             if len(self.app_secret_key.get_secret_value()) < 32:
                 raise ValueError("APP_SECRET_KEY must be at least 32 characters outside local/test")
+            if self.livekit_api_key == "devkey":
+                raise ValueError(
+                    "LIVEKIT_API_KEY must not be the development key outside local/test"
+                )
             if not self.cookie_secure:
                 raise ValueError("COOKIE_SECURE must be true outside local/test")
         return self

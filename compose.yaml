@@ -1,6 +1,6 @@
 # Local development services. Start: docker compose up -d   Stop: docker compose down
 # Values come from .env (copy .env.example). Ports bind to 127.0.0.1 only, never to the network.
-# LiveKit server and LiveKit SIP are added in Phase 3.
+# LiveKit SIP (phone calls) is added with phone numbers.
 
 name: voice-platform
 
@@ -38,6 +38,17 @@ services:
       retries: 10
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  livekit:
+    # Local development media server. --dev uses the public dev keys (devkey / secret):
+    # never expose this to a network. --node-ip makes WebRTC reachable from this PC's browser.
+    image: livekit/livekit-server:v1.13.11
+    restart: unless-stopped
+    command: ["--dev", "--bind", "0.0.0.0", "--node-ip", "127.0.0.1"]
+    ports:
+      - "127.0.0.1:7880:7880"       # signalling / API
+      - "127.0.0.1:7881:7881"       # WebRTC over TCP
+      - "127.0.0.1:7882:7882/udp"   # WebRTC over UDP
 
 volumes:
   postgres-data:

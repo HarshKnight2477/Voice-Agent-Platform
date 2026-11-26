@@ -12,13 +12,14 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from voice_platform import __version__
-from voice_platform.api import agents, auth, health, members, organizations
+from voice_platform.api import agents, auth, calls, health, members, organizations
 from voice_platform.api.dependencies import CSRF_HEADER, SESSION_COOKIE
 from voice_platform.api.errors import install_error_handlers
 from voice_platform.identity.email import LocalDevEmailSender
 from voice_platform.infrastructure.database import create_engine, create_sessionmaker
 from voice_platform.infrastructure.health import LiveDependencyChecker
 from voice_platform.infrastructure.redis import create_redis
+from voice_platform.providers.telephony.livekit_provider import LiveKitProvider
 from voice_platform.shared.config import Environment, Settings, get_settings
 from voice_platform.shared.http_security import RateLimitMiddleware, SecurityHeadersMiddleware
 from voice_platform.shared.logging import configure_logging, get_logger
@@ -36,6 +37,7 @@ def build_routes(app: FastAPI) -> None:
     app.include_router(organizations.router)
     app.include_router(members.router)
     app.include_router(agents.router)
+    app.include_router(calls.router)
 
 
 def install_middleware(app: FastAPI, settings: Settings) -> None:
@@ -74,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.rate_limiter = RedisRateLimiter(redis)
         # A real email provider replaces this before staging (it refuses to run there).
         app.state.email_sender = LocalDevEmailSender(settings)
+        app.state.telephony = LiveKitProvider(settings)
         log.info("app.started", env=settings.app_env.value, version=__version__)
         try:
             yield
