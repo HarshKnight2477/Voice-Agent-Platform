@@ -20,6 +20,7 @@ dependencies = [
     "anthropic>=1.0",
     "livekit-api>=1.0",
     "httpx>=0.28",
+    "livekit-agents[openai,silero]~=1.8",
 ]
 
 [dependency-groups]
@@ -68,6 +69,8 @@ extend-immutable-calls = ["fastapi.Depends", "voice_platform.api.dependencies.re
 "migrations/**" = ["E501", "S608"]
 # Tests use fixed, fake passwords.
 "tests/**" = ["S105", "S106"]
+# Developer scripts: inline HTML, simple blocking HTTP calls.
+"scripts/**" = ["E501", "ASYNC212", "RUF006", "S105", "S106"]
 
 [tool.mypy]
 python_version = "3.12"

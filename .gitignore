@@ -44,3 +44,6 @@ infra/volumes/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local end-to-end test recordings
+.e2e/

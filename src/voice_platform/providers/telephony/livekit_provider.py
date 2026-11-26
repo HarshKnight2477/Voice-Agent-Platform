@@ -1,6 +1,7 @@
 """LiveKit implementation of the TelephonyProvider port.
 
-APIs used (checked against docs.livekit.io on 2026-11-26, livekit-api 2.0.1):
+APIs used (checked against docs.livekit.io on 2026-11-26; livekit-api 1.2, the version
+livekit-agents 1.9 requires):
 - AccessToken().with_identity().with_grants(VideoGrants(...)).with_room_config(
       RoomConfiguration(agents=[RoomAgentDispatch(agent_name=..., metadata=...)])).with_ttl()
   Dispatch through the token happens only when the room is first created, so every test

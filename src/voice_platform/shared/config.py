@@ -72,6 +72,13 @@ class Settings(BaseSettings):
     livekit_agent_name: str = "voice-agent"
     test_call_token_ttl_minutes: int = Field(default=10, ge=1, le=60)
 
+    # Speech. "local" = free open-source servers from compose.yaml (profile "speech").
+    speech_provider: Literal["local"] = "local"
+    local_stt_url: str = "http://127.0.0.1:8001/v1"
+    local_stt_model: str = "Systran/faster-whisper-base.en"
+    local_tts_url: str = "http://127.0.0.1:8880/v1"
+    local_tts_voice: str = "af_heart"
+
     # Requests per minute per signed-in session (or per IP when signed out).
     api_rate_limit_per_minute: int = Field(default=600, ge=10)
     session_ttl_hours: int = Field(default=24 * 14, ge=1, le=24 * 90)

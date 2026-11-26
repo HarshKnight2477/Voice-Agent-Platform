@@ -50,6 +50,34 @@ services:
       - "127.0.0.1:7881:7881"       # WebRTC over TCP
       - "127.0.0.1:7882:7882/udp"   # WebRTC over UDP
 
+  # ---- Free local speech (optional): docker compose --profile speech up -d ----
+  stt:
+    # Whisper speech-to-text (faster-whisper) behind an OpenAI-compatible API, on the CPU so
+    # the GPU stays free for the local LLM.
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    profiles: ["speech"]
+    restart: unless-stopped
+    environment:
+      WHISPER__TTL: "-1"            # keep the model loaded (no reload delay mid-call)
+      WHISPER__COMPUTE_TYPE: int8   # fastest on CPU
+      WHISPER__CPU_THREADS: "8"
+      _UNSTABLE_VAD_FILTER: "false" # LiveKit's VAD already trims silence
+      ENABLE_UI: "false"
+      LOG_LEVEL: info
+    ports:
+      - "127.0.0.1:8001:8000"
+    volumes:
+      - stt-models:/home/ubuntu/.cache/huggingface/hub
+
+  tts:
+    # Kokoro text-to-speech behind an OpenAI-compatible API (CPU build).
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    profiles: ["speech"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8880:8880"
+
 volumes:
+  stt-models:
   postgres-data:
   redis-data:
